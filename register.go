@@ -25,19 +25,12 @@ var DefaultGetRoomIdFunc = func(c *gin.Context, ctx *dgctx.DgContext) (string, e
 type SignalingConfig struct {
 	RouterGroup              *gin.RouterGroup
 	RelativePath             string
-	Server                   *Server
 	GetRoomIdFunc            GetRoomIdFunc
 	SignalingMessageCallback dgws.WebSocketMessageCallback[[]byte]
 }
 
 func RegisterSignaling(config *SignalingConfig) {
-	if config.Server == nil {
-		config.Server = NewServer()
-	}
-
-	if config.GetRoomIdFunc == nil {
-		config.GetRoomIdFunc = DefaultGetRoomIdFunc
-	}
+	server := NewServer()
 
 	dgws.GetBytes(&wrapper.RequestHolder[dgws.WebSocketMessage[[]byte], error]{
 		RouterGroup:  config.RouterGroup,
@@ -50,7 +43,7 @@ func RegisterSignaling(config *SignalingConfig) {
 				}
 
 				client := getClient(ctx)
-				config.Server.handleSignalingMessage(ctx, client, signalingMessage)
+				server.handleSignalingMessage(ctx, client, signalingMessage)
 			}
 
 			if config.SignalingMessageCallback != nil {
@@ -75,24 +68,24 @@ func RegisterSignaling(config *SignalingConfig) {
 		client := &Client{
 			id:     uuid.NewString(),
 			conn:   conn,
-			server: config.Server,
+			server: server,
 		}
 
-		config.Server.mutex.Lock()
-		config.Server.clients[client.id] = client
+		server.mutex.Lock()
+		server.clients[client.id] = client
 		setClient(ctx, client)
-		config.Server.mutex.Unlock()
+		server.mutex.Unlock()
 
 		return nil, nil
 	}, dgws.DefaultIsEndFunc, func(ctx *dgctx.DgContext, conn *websocket.Conn, _ *websocket.Conn) error {
 		client := getClient(ctx)
 
 		// Clean up and close the connection
-		config.Server.leaveRoom(ctx, client)
+		server.leaveRoom(ctx, client)
 
-		config.Server.mutex.Lock()
-		delete(config.Server.clients, client.id)
-		config.Server.mutex.Unlock()
+		server.mutex.Lock()
+		delete(server.clients, client.id)
+		server.mutex.Unlock()
 
 		return nil
 	})

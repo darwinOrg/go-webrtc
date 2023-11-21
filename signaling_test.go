@@ -14,12 +14,10 @@ func TestSignaling(t *testing.T) {
 	go StartStunServer(3478)
 	engine := wrapper.DefaultEngine()
 	dgws.InitWsConnLimit(10)
-	server := NewServer()
 
 	RegisterSignaling(&SignalingConfig{
 		RouterGroup:   engine.Group("/ws"),
 		RelativePath:  "",
-		Server:        server,
 		GetRoomIdFunc: DefaultGetRoomIdFunc,
 		SignalingMessageCallback: func(ctx *dgctx.DgContext, wsm *dgws.WebSocketMessage[[]byte]) error {
 			return nil
