@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>WebRTC Stream</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f1f1f1;
+        }
+
+        h1 {
+            font-size: 18px;
+            margin: 0 0 10px;
+        }
+
+        #container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: flex-start;
+            padding: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        .input-group input[type="text"] {
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            margin-right: 10px;
+            width: 200px;
+        }
+
+        .input-group button {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 3px;
+            color: #fff;
+            margin-right: 10px;
+        }
+
+        .button-disabled {
+            background-color: #ccc;
+            cursor: no-drop;
+        }
+
+        .button-enabled {
+            background-color: #ccc;
+            cursor: pointer;
+        }
+
+        .input-group button.join {
+            background-color: #4caf50;
+        }
+
+        .input-group button.leave {
+            background-color: #f44336;
+        }
+
+        .input-group button.loading {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .input-group button:hover {
+            opacity: 0.8;
+        }
+
+        .video-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .video {
+            width: 400px;
+            height: auto;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .loading-text {
+            font-size: 14px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<div id="container">
+    <div class="input-group">
+        <label for="roomIDInput"><h1>房间ID：</h1></label>
+        <input type="text" id="roomIDInput" placeholder="请输入房间ID">
+        <button id="joinButton" class="join">加入房间</button>
+        <button id="leaveButton" class="leave">退出房间</button>
+    </div>
+
+    <div class="video-container">
+        <h1>本地视频：</h1>
+        <div class="video-wrapper">
+            <video id="localVideo" autoplay muted class="video"></video>
+            <p id="localVideoLoading" class="loading-text"></p>
+        </div>
+    </div>
+
+    <div class="video-container">
+        <h1>远程视频：</h1>
+        <div class="video-wrapper">
+            <video id="remoteVideo" autoplay class="video"></video>
+            <p id="remoteVideoLoading" class="loading-text"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    let localVideoLoading = document.getElementById('localVideoLoading');
+    let remoteVideoLoading = document.getElementById('remoteVideoLoading');
+    // 获取输入框和按钮的引用
+    let roomIDInput = document.getElementById('roomIDInput');
+    let joinButton = document.getElementById('joinButton');
+    // 获取退出房间按钮的引用
+    let leaveButton = document.getElementById('leaveButton');
+    let localVideo = document.getElementById('localVideo');
+    let remoteVideo = document.getElementById('remoteVideo');
+    let peerConnection;
+    let signalingSocket;
+    let isConnected = false;
+
+    enableButton(joinButton);
+    disableButton(leaveButton);
+
+    // 监听视频元数据加载完成事件
+    remoteVideo.addEventListener('resize', function () {
+        // 获取视频流的实际分辨率
+        const videoWidth = remoteVideo.videoWidth;
+        const videoHeight = remoteVideo.videoHeight;
+        console.log('视频分辨率:', videoWidth, 'x', videoHeight);
+    });
+
+    // 加入房间按钮点击事件
+    joinButton.addEventListener('click', function () {
+        let roomID = roomIDInput.value;
+        if (roomID.length <= 0) {
+            console.log('请输入房间ID');
+            return;
+        }
+        setLoadingState(localVideoLoading, '本地视频加载中...');
+        setLoadingState(remoteVideoLoading, '等待对方加入房间...');
+        // 执行加入房间的逻辑
+        if (!isConnected) {
+            createLocalStream(roomID);
+        }
+    });
+
+    // 退出房间按钮点击事件
+    leaveButton.addEventListener('click', function () {
+        setLoadingState(remoteVideoLoading, '等待加入房间...');
+
+        // 执行退出房间的逻辑
+        leaveRoom();
+    });
+
+    // 视频流加载完成时移除加载状态
+    localVideo.addEventListener('loadedmetadata', () => {
+        localVideoLoading.style.display = 'none';
+    });
+
+    remoteVideo.addEventListener('loadedmetadata', () => {
+        remoteVideoLoading.style.display = 'none';
+    });
+
+    // 获取视频流失败时移除加载状态
+    localVideo.addEventListener('error', () => {
+        localVideoLoading.style.display = 'none';
+    });
+
+    remoteVideo.addEventListener('error', () => {
+        remoteVideoLoading.style.display = 'none';
+    });
+
+    // 创建本地视频流
+    function createLocalStream(roomID) {
+        navigator.mediaDevices.getUserMedia({video: true, audio: true})
+            .then(stream => {
+                localVideo.srcObject = stream;
+                createPeerConnection(stream, roomID);
+            })
+            .catch(error => {
+                console.log('Failed to create local stream:', error);
+            });
+    }
+
+    // 创建对等连接
+    function createPeerConnection(stream, roomID) {
+        console.log("createPeerConnection start.")
+        let configuration = {
+            iceServers: [{urls: 'stun:127.0.0.1:3478'}]
+            // iceServers: [{urls: 'stun:stun.l.google.com:19302'}]
+        };
+        peerConnection = new RTCPeerConnection(configuration);
+
+        // 添加本地流到对等连接
+        stream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, stream);
+        });
+
+        // 监听 ICE 候选人事件
+        peerConnection.onicecandidate = event => {
+            if (event.candidate) {
+                sendSignalingMessage({command: 'candidate', payload: event.candidate});
+            }
+        };
+
+        // 监听远程媒体流事件
+        peerConnection.ontrack = event => {
+            remoteVideo.srcObject = event.streams[0];
+        };
+
+        createSignalingSocket(roomID); // 创建 WebSocket 连接
+        console.log("createPeerConnection end.")
+    }
+
+    // 创建 WebSocket 连接并发送信令消息
+    function sendSignalingMessage(message) {
+        if (signalingSocket && signalingSocket.readyState === WebSocket.OPEN) {
+            signalingSocket.send(JSON.stringify(message));
+        } else {
+            console.log('Signaling socket is not open.');
+        }
+    }
+
+    // 处理信令消息
+    function handleSignalingMessage(message) {
+        switch (message.command) {
+            case 'offer':
+                handleOfferMessage(message.payload);
+                break;
+            case 'answer':
+                handleAnswerMessage(message.payload);
+                break;
+            case 'candidate':
+                handleCandidateMessage(message.payload);
+                break;
+            case 'leave':
+                handleLeaveMessage();
+                break;
+            default:
+                console.log('Unknown signaling message:', message);
+        }
+    }
+
+    // 处理 Offer 消息
+    function handleOfferMessage(offer) {
+        console.log('Received offer:', offer);
+        peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
+            .then(() => {
+                console.log('setRemoteDescription success.');
+                return peerConnection.createAnswer();
+            })
+            .then(answer => {
+                console.log('Created answer:', answer);
+                return peerConnection.setLocalDescription(answer);
+            })
+            .then(() => {
+                console.log('setLocalDescription success.');
+                sendSignalingMessage({command: 'answer', payload: peerConnection.localDescription});
+            })
+            .catch(error => {
+                console.log('Error handling offer:', error);
+            });
+    }
+
+    // 处理 Answer 消息
+    function handleAnswerMessage(answer) {
+        console.log('Received answer:', answer);
+        peerConnection.setRemoteDescription(new RTCSessionDescription(answer))
+            .then(() => {
+                console.log('setRemoteDescription success.');
+            })
+            .catch(error => {
+                console.log('Error handling answer:', error);
+            });
+    }
+
+    // 处理 Candidate 消息
+    function handleCandidateMessage(candidate) {
+        console.log('Received candidate:', candidate);
+        peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
+            .then(() => {
+                console.log('addIceCandidate success.');
+            })
+            .catch(error => {
+                console.log('Error handling candidate:', error);
+            });
+    }
+
+    // 加入房间
+    function joinRoom(roomID) {
+        console.log("joinRoom:", roomID)
+        sendSignalingMessage({command: 'join', payload: {roomID: roomID}});
+        console.log("joinRoom sendSignalingMessage success.")
+    }
+
+    // 创建 Offer
+    function createOffer() {
+        console.log("createOffer start.")
+        if (peerConnection) {
+            peerConnection.createOffer()
+                .then(offer => {
+                    console.log('createOffer offer:', offer);
+                    return peerConnection.setLocalDescription(offer);
+                })
+                .then(() => {
+                    console.log('createOffer sendSignalingMessage start.');
+                    sendSignalingMessage({command: 'offer', payload: peerConnection.localDescription});
+                    console.log('createOffer sendSignalingMessage end.');
+                })
+                .catch(error => {
+                    console.log('Failed to create offer:', error);
+                });
+        } else {
+            console.log("createOffer fail, peerConnection:", peerConnection)
+        }
+        console.log("createOffer end.")
+    }
+
+    // 创建 WebSocket 连接
+    function createSignalingSocket(roomID) {
+        let signalingServerUrl = 'ws://127.0.0.1:8080/ws?roomID=' + roomID;
+        signalingSocket = new WebSocket(signalingServerUrl);
+
+        signalingSocket.onopen = () => {
+            console.log('Signaling socket connection has been successfully established.');
+            isConnected = true;
+            disableButton(joinButton); // 禁用加入房间按钮
+            joinRoom(roomID);
+            createOffer(); // 创建 Offer 并发送
+            enableButton(leaveButton); // 启用退出房间按钮
+        };
+
+        signalingSocket.onmessage = event => {
+            let message = JSON.parse(event.data);
+            handleSignalingMessage(message);
+        };
+
+        signalingSocket.onerror = error => {
+            console.log('Signaling socket error:', error);
+        };
+
+        signalingSocket.onclose = () => {
+            console.log('Signaling socket closed.');
+            // 断开对等连接
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+
+            // 释放媒体流资源
+            // if (localVideo.srcObject) {
+            //     localVideo.srcObject.getTracks().forEach(track => track.stop());
+            //     localVideo.srcObject = null;
+            // }
+            if (remoteVideo.srcObject) {
+                remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+                remoteVideo.srcObject = null;
+            }
+
+            isConnected = false;
+            enableButton(joinButton); // 启用加入房间按钮
+            disableButton(leaveButton); // 禁用退出房间按钮
+        };
+    }
+
+    // 设置加载状态
+    function setLoadingState(element, loadingText) {
+        element.style.display = 'none';
+        element.innerHTML = loadingText;
+        element.style.display = 'block';
+    }
+
+    // 处理对方退出房间的消息
+    function handleLeaveMessage() {
+        setLoadingState(remoteVideoLoading, '对方已退出房间...');
+    }
+
+    // 退出房间
+    function leaveRoom() {
+        if (signalingSocket && signalingSocket.readyState === WebSocket.OPEN) {
+            sendSignalingMessage({command: 'leave'});
+            signalingSocket.close();
+            signalingSocket = null;
+        }
+        if (peerConnection) {
+            peerConnection.close();
+            peerConnection = null;
+        }
+        if (remoteVideo.srcObject) {
+            remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+            remoteVideo.srcObject = null;
+        }
+        console.log('已退出房间');
+    }
+
+    // 禁用按钮
+    function disableButton(button) {
+        button.disabled = true;
+        button.classList.remove('button-enabled');
+        button.classList.add('button-disabled');
+    }
+
+    // 启用按钮
+    function enableButton(button) {
+        button.disabled = false;
+        button.classList.remove('button-disabled');
+        button.classList.add('button-enabled');
+    }
+</script>
+
+</body>
+</html>
