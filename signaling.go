@@ -4,12 +4,26 @@ import (
 	dgctx "github.com/darwinOrg/go-common/context"
 	dglogger "github.com/darwinOrg/go-logger"
 	"github.com/gorilla/websocket"
-	"log"
 	"sync"
 )
 
+var (
+	RoomIdKey = "roomID"
+	clientKey = "client"
+)
+
+type CommandType string
+
+const (
+	CommandJoin      CommandType = "join"
+	CommandOffer     CommandType = "offer"
+	CommandAnswer    CommandType = "answer"
+	CommandCandidate CommandType = "candidate"
+	CommandLeave     CommandType = "leave"
+)
+
 type SignalingMessage struct {
-	Command string                 `json:"command"`
+	Command CommandType            `json:"command"`
 	Payload map[string]interface{} `json:"payload"`
 }
 
@@ -20,24 +34,6 @@ type ICECandidate struct {
 	SDPMLineIndex int    `json:"sdpMLineIndex"`
 }
 
-// SessionDescription represents an SDP
-type SessionDescription struct {
-	Type string `json:"type"`
-	SDP  string `json:"sdp"`
-}
-
-// Client represents a connected client
-type Client struct {
-	id         string              // Client ID
-	conn       *websocket.Conn     // WebSocket connection for the client
-	server     *Server             // Reference to the signaling server
-	room       *Room               // Room that the client belongs to
-	localICEs  []*ICECandidate     // Local ICE candidates
-	remoteICEs []*ICECandidate     // Remote ICE candidates
-	localSDP   *SessionDescription // Local SDP
-	remoteSDP  *SessionDescription // Remote SDP
-}
-
 // Room represents a room
 type Room struct {
 	id      string             // Room ID
@@ -45,11 +41,26 @@ type Room struct {
 	mutex   sync.RWMutex
 }
 
+// Client represents a connected client
+type Client struct {
+	id     string          // Client ID
+	conn   *websocket.Conn // WebSocket connection for the client
+	server *Server         // Reference to the signaling server
+	room   *Room           // Room that the client belongs to
+}
+
 // Server represents the signaling server
 type Server struct {
 	clients map[string]*Client // All connected clients
 	rooms   map[string]*Room   // All rooms
 	mutex   sync.RWMutex
+}
+
+func NewServer() *Server {
+	return &Server{
+		clients: make(map[string]*Client),
+		rooms:   make(map[string]*Room),
+	}
 }
 
 // createRoom creates a new room with the given room ID
@@ -89,7 +100,7 @@ func (s *Server) leaveRoom(ctx *dgctx.DgContext, client *Client) {
 		room := client.room
 		room.mutex.Lock()
 		s.sendSignalingMessageToRoom(ctx, client.room, client, &SignalingMessage{
-			Command: "leave",
+			Command: CommandLeave,
 			Payload: map[string]interface{}{},
 		})
 		delete(room.clients, client.id)
@@ -118,22 +129,48 @@ func (s *Server) sendSignalingMessageToRoom(ctx *dgctx.DgContext, room *Room, se
 // handleSignalingMessage handles signaling messages received from clients
 func (s *Server) handleSignalingMessage(ctx *dgctx.DgContext, client *Client, message *SignalingMessage) {
 	switch message.Command {
-	case "join":
-		roomID, ok := message.Payload["roomID"].(string)
-		if !ok {
-			log.Println("Invalid room ID format:", message.Payload["roomID"])
+	case CommandJoin:
+		roomID := GetRoomId(ctx)
+		if roomID == "" {
+			dglogger.Error(ctx, "has no room ID")
 			return
 		}
 		// Handle logic for client joining a room
 		s.joinRoom(roomID, client)
-	case "offer", "answer", "candidate":
+	case CommandOffer, CommandAnswer, CommandCandidate:
 		// Handle RTC signaling messages
 		room := client.room
 		if room != nil {
 			s.sendSignalingMessageToRoom(ctx, room, client, message)
 		}
-	case "leave":
+	case CommandLeave:
 		s.leaveRoom(ctx, client)
 		return
 	}
+}
+
+func SetRoomId(ctx *dgctx.DgContext, roomID string) {
+	ctx.SetExtraKeyValue(RoomIdKey, roomID)
+}
+
+func GetRoomId(ctx *dgctx.DgContext) string {
+	sessionId := ctx.GetExtraValue(RoomIdKey)
+	if sessionId == nil {
+		return ""
+	}
+
+	return sessionId.(string)
+}
+
+func setClient(ctx *dgctx.DgContext, client *Client) {
+	ctx.SetExtraKeyValue(clientKey, client)
+}
+
+func getClient(ctx *dgctx.DgContext) *Client {
+	server := ctx.GetExtraValue(clientKey)
+	if server == nil {
+		return nil
+	}
+
+	return server.(*Client)
 }
