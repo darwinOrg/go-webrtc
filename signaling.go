@@ -130,7 +130,7 @@ func (s *Server) sendSignalingMessageToRoom(ctx *dgctx.DgContext, room *Room, se
 func (s *Server) handleSignalingMessage(ctx *dgctx.DgContext, client *Client, message *SignalingMessage) {
 	switch message.Command {
 	case CommandJoin:
-		roomID := GetRoomId(ctx)
+		roomID := getRoomId(ctx)
 		if roomID == "" {
 			dglogger.Error(ctx, "has no room ID")
 			return
@@ -149,11 +149,11 @@ func (s *Server) handleSignalingMessage(ctx *dgctx.DgContext, client *Client, me
 	}
 }
 
-func SetRoomId(ctx *dgctx.DgContext, roomID string) {
+func setRoomId(ctx *dgctx.DgContext, roomID string) {
 	ctx.SetExtraKeyValue(RoomIdKey, roomID)
 }
 
-func GetRoomId(ctx *dgctx.DgContext) string {
+func getRoomId(ctx *dgctx.DgContext) string {
 	sessionId := ctx.GetExtraValue(RoomIdKey)
 	if sessionId == nil {
 		return ""

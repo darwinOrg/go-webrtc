@@ -6,7 +6,6 @@ import (
 	"github.com/darwinOrg/go-monitor"
 	"github.com/darwinOrg/go-web/wrapper"
 	dgws "github.com/darwinOrg/go-websocket"
-	"github.com/gin-gonic/gin"
 	"testing"
 )
 
@@ -18,13 +17,11 @@ func TestSignaling(t *testing.T) {
 	server := NewServer()
 
 	RegisterSignaling(&SignalingConfig{
-		RouterGroup:  engine.Group("/ws"),
-		RelativePath: "",
-		Server:       server,
-		GetRoomIdFunc: func(c *gin.Context, _ *dgctx.DgContext) (string, error) {
-			return c.Query(RoomIdKey), nil
-		},
-		SignalingMessageCallback: func(ctx *dgctx.DgContext, message *SignalingMessage) error {
+		RouterGroup:   engine.Group("/ws"),
+		RelativePath:  "",
+		Server:        server,
+		GetRoomIdFunc: DefaultGetRoomIdFunc,
+		SignalingMessageCallback: func(ctx *dgctx.DgContext, wsm *dgws.WebSocketMessage[[]byte]) error {
 			return nil
 		},
 	})

@@ -2,6 +2,7 @@ package dgwrtc
 
 import (
 	dgctx "github.com/darwinOrg/go-common/context"
+	"github.com/darwinOrg/go-common/utils"
 	dglogger "github.com/darwinOrg/go-logger"
 	"github.com/darwinOrg/go-web/wrapper"
 	dgws "github.com/darwinOrg/go-websocket"
@@ -11,29 +12,51 @@ import (
 )
 
 type GetRoomIdFunc func(c *gin.Context, ctx *dgctx.DgContext) (string, error)
-type SignalingMessageCallbackFunc func(ctx *dgctx.DgContext, message *SignalingMessage) error
+
+var DefaultGetRoomIdFunc = func(c *gin.Context, ctx *dgctx.DgContext) (string, error) {
+	roomID := c.Query(RoomIdKey)
+	if roomID == "" {
+		roomID = uuid.NewString()
+	}
+
+	return roomID, nil
+}
 
 type SignalingConfig struct {
-	RouterGroup              *gin.RouterGroup `binding:"required"`
+	RouterGroup              *gin.RouterGroup
 	RelativePath             string
-	Server                   *Server       `binding:"required"`
-	GetRoomIdFunc            GetRoomIdFunc `binding:"required"`
-	SignalingMessageCallback SignalingMessageCallbackFunc
+	Server                   *Server
+	GetRoomIdFunc            GetRoomIdFunc
+	SignalingMessageCallback dgws.WebSocketMessageCallback[[]byte]
 }
 
 func RegisterSignaling(config *SignalingConfig) {
-	dgws.GetJson(&wrapper.RequestHolder[dgws.WebSocketMessage[SignalingMessage], error]{
+	if config.Server == nil {
+		config.Server = NewServer()
+	}
+
+	if config.GetRoomIdFunc == nil {
+		config.GetRoomIdFunc = DefaultGetRoomIdFunc
+	}
+
+	dgws.GetBytes(&wrapper.RequestHolder[dgws.WebSocketMessage[[]byte], error]{
 		RouterGroup:  config.RouterGroup,
 		RelativePath: config.RelativePath,
-		BizHandler: func(_ *gin.Context, ctx *dgctx.DgContext, wsm *dgws.WebSocketMessage[SignalingMessage]) error {
+		BizHandler: func(_ *gin.Context, ctx *dgctx.DgContext, wsm *dgws.WebSocketMessage[[]byte]) error {
 			if wsm.MessageType == websocket.TextMessage {
+				signalingMessage, err := utils.ConvertJsonBytesToBean[SignalingMessage](*wsm.MessageData)
+				if err != nil {
+					return err
+				}
+
 				client := getClient(ctx)
-				config.Server.handleSignalingMessage(ctx, client, wsm.MessageData)
-				if config.SignalingMessageCallback != nil {
-					err := config.SignalingMessageCallback(ctx, wsm.MessageData)
-					if err != nil {
-						return err
-					}
+				config.Server.handleSignalingMessage(ctx, client, signalingMessage)
+			}
+
+			if config.SignalingMessageCallback != nil {
+				err := config.SignalingMessageCallback(ctx, wsm)
+				if err != nil {
+					return err
 				}
 			}
 
@@ -42,10 +65,10 @@ func RegisterSignaling(config *SignalingConfig) {
 	}, func(c *gin.Context, ctx *dgctx.DgContext) error {
 		roomID, err := config.GetRoomIdFunc(c, ctx)
 		if err != nil {
-			dglogger.Errorf(ctx, "GetRoomId error: %v", err)
+			dglogger.Errorf(ctx, "getRoomId error: %v", err)
 			return err
 		}
-		SetRoomId(ctx, roomID)
+		setRoomId(ctx, roomID)
 
 		return nil
 	}, func(ctx *dgctx.DgContext, conn *websocket.Conn) (*websocket.Conn, error) {
