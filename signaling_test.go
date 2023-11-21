@@ -5,6 +5,7 @@ import (
 	dgctx "github.com/darwinOrg/go-common/context"
 	"github.com/darwinOrg/go-web/wrapper"
 	dgws "github.com/darwinOrg/go-websocket"
+	"github.com/gorilla/websocket"
 	"testing"
 )
 
@@ -17,6 +18,9 @@ func TestSignaling(t *testing.T) {
 		RouterGroup:   engine.Group("/ws"),
 		RelativePath:  "",
 		GetRoomIdFunc: DefaultGetRoomIdFunc,
+		StartSignalingCallback: func(ctx *dgctx.DgContext, conn *websocket.Conn) error {
+			return nil
+		},
 		SignalingMessageCallback: func(ctx *dgctx.DgContext, wsm *dgws.WebSocketMessage[[]byte]) error {
 			return nil
 		},

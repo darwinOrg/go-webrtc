@@ -12,6 +12,7 @@ import (
 )
 
 type GetRoomIdFunc func(c *gin.Context, ctx *dgctx.DgContext) (string, error)
+type StartSignalingCallbackFunc func(ctx *dgctx.DgContext, conn *websocket.Conn) error
 
 var DefaultGetRoomIdFunc = func(c *gin.Context, ctx *dgctx.DgContext) (string, error) {
 	roomID := c.Query(RoomIdKey)
@@ -26,6 +27,7 @@ type SignalingConfig struct {
 	RouterGroup              *gin.RouterGroup
 	RelativePath             string
 	GetRoomIdFunc            GetRoomIdFunc
+	StartSignalingCallback   StartSignalingCallbackFunc
 	SignalingMessageCallback dgws.WebSocketMessageCallback[[]byte]
 }
 
@@ -58,7 +60,7 @@ func RegisterSignaling(config *SignalingConfig) {
 	}, func(c *gin.Context, ctx *dgctx.DgContext) error {
 		roomID, err := config.GetRoomIdFunc(c, ctx)
 		if err != nil {
-			dglogger.Errorf(ctx, "getRoomId error: %v", err)
+			dglogger.Errorf(ctx, "GetRoomId error: %v", err)
 			return err
 		}
 		setRoomId(ctx, roomID)
@@ -75,6 +77,14 @@ func RegisterSignaling(config *SignalingConfig) {
 		server.clients[client.id] = client
 		setClient(ctx, client)
 		server.mutex.Unlock()
+
+		if config.StartSignalingCallback != nil {
+			err := config.StartSignalingCallback(ctx, conn)
+			if err != nil {
+				dglogger.Errorf(ctx, "StartSignalingCallback error: %v", err)
+				return nil, err
+			}
+		}
 
 		return nil, nil
 	}, dgws.DefaultIsEndFunc, func(ctx *dgctx.DgContext, conn *websocket.Conn, _ *websocket.Conn) error {
