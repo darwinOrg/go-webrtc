@@ -3,14 +3,12 @@ package dgwrtc
 import (
 	"fmt"
 	dgctx "github.com/darwinOrg/go-common/context"
-	"github.com/darwinOrg/go-monitor"
 	"github.com/darwinOrg/go-web/wrapper"
 	dgws "github.com/darwinOrg/go-websocket"
 	"testing"
 )
 
 func TestSignaling(t *testing.T) {
-	monitor.Start("signaling", 19002)
 	go StartStunServer(3478)
 	engine := wrapper.DefaultEngine()
 	dgws.InitWsConnLimit(10)

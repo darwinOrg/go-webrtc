@@ -5,7 +5,6 @@ go 1.19
 require (
 	github.com/darwinOrg/go-common v0.0.29
 	github.com/darwinOrg/go-logger v0.0.2
-	github.com/darwinOrg/go-monitor v0.0.3
 	github.com/darwinOrg/go-web v0.0.24
 	github.com/darwinOrg/go-websocket v0.1.0
 	github.com/gin-gonic/gin v1.9.1
@@ -20,6 +19,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
 	github.com/chenzhuoyu/iasm v0.9.1 // indirect
+	github.com/darwinOrg/go-monitor v0.0.3 // indirect
 	github.com/darwinOrg/go-validator-ext v0.0.3 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/gin-contrib/cors v1.4.0 // indirect
