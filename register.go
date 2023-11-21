@@ -14,13 +14,8 @@ import (
 type GetRoomIdFunc func(c *gin.Context, ctx *dgctx.DgContext) (string, error)
 type StartSignalingCallbackFunc func(ctx *dgctx.DgContext, conn *websocket.Conn) error
 
-var DefaultGetRoomIdFunc = func(c *gin.Context, ctx *dgctx.DgContext) (string, error) {
-	roomID := c.Query(RoomIdKey)
-	if roomID == "" {
-		roomID = uuid.NewString()
-	}
-
-	return roomID, nil
+var DefaultGetRoomIdFunc = func(_ *gin.Context, _ *dgctx.DgContext) (string, error) {
+	return uuid.NewString(), nil
 }
 
 type SignalingConfig struct {
