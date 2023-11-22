@@ -148,7 +148,7 @@ func fillListenerConfigs(sc *turn.ServerConfig, config *TurnServerConfig) {
 			RelayAddressGenerator: config.RelayAddressGenerator,
 		}
 
-		log.Printf("Server %d listening on %s\n", i, conn.Addr().String())
+		log.Printf("Turn Server %d listening on %s\n", i, conn.Addr().String())
 	}
 	sc.ListenerConfigs = listenerConfigs
 }
@@ -167,7 +167,7 @@ func fillPacketConnConfigs(sc *turn.ServerConfig, config *TurnServerConfig) {
 			RelayAddressGenerator: config.RelayAddressGenerator,
 		}
 
-		log.Printf("Server %d listening on %s\n", i, conn.LocalAddr().String())
+		log.Printf("Turn Server %d listening on %s\n", i, conn.LocalAddr().String())
 	}
 	sc.PacketConnConfigs = packetConnConfigs
 }
