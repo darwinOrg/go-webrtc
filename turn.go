@@ -51,11 +51,11 @@ func (s *TurnServer) Close() error {
 
 func NewTurnServer(config *TurnServerConfig) *TurnServer {
 	if len(config.PublicIP) == 0 {
-		dglogger.OnlyProdFatal("PublicIP is required")
+		dglogger.ProdFatal("PublicIP is required")
 		return nil
 	}
 	if len(config.AuthSecret) == 0 {
-		dglogger.OnlyProdFatal("AuthSecret is required")
+		dglogger.ProdFatal("AuthSecret is required")
 		return nil
 	}
 
@@ -85,7 +85,7 @@ func NewTurnServer(config *TurnServerConfig) *TurnServer {
 
 	server, err := turn.NewServer(sc)
 	if err != nil {
-		dglogger.OnlyProdFatal(err)
+		dglogger.ProdFatal(err)
 		return nil
 	}
 
@@ -102,7 +102,7 @@ func fillListenerConfig(sc *turn.ServerConfig, config *TurnServerConfig) {
 	// this allows us to add logging, storage or modify inbound/outbound traffic
 	tcpListener, err := config.ListenerBuilder(config.Network, config.Port)
 	if err != nil {
-		dglogger.OnlyProdFatalf("Failed to create TURN server listener: %s", err)
+		dglogger.ProdFatalf("Failed to create TURN server listener: %s", err)
 		return
 	}
 
@@ -121,7 +121,7 @@ func fillPacketConnConfig(sc *turn.ServerConfig, config *TurnServerConfig) {
 	// this allows us to add logging, storage or modify inbound/outbound traffic
 	udpListener, err := config.PacketConnBuilder(config.Network, config.Port)
 	if err != nil {
-		dglogger.OnlyProdFatalf("Failed to create TURN server listener: %s", err)
+		dglogger.ProdFatalf("Failed to create TURN server listener: %s", err)
 		return
 	}
 
@@ -139,7 +139,7 @@ func fillListenerConfigs(sc *turn.ServerConfig, config *TurnServerConfig) {
 	for i := 0; i < config.ThreadNum; i++ {
 		conn, listErr := config.ListenerBuilder(config.Network, config.Port)
 		if listErr != nil {
-			dglogger.OnlyProdFatalf("Failed to allocate TCP listener at %s:%s", config.Network, config.Port)
+			dglogger.ProdFatalf("Failed to allocate TCP listener at %s:%d", config.Network, config.Port)
 			return
 		}
 
@@ -158,7 +158,7 @@ func fillPacketConnConfigs(sc *turn.ServerConfig, config *TurnServerConfig) {
 	for i := 0; i < config.ThreadNum; i++ {
 		conn, listErr := config.PacketConnBuilder(config.Network, config.Port)
 		if listErr != nil {
-			dglogger.OnlyProdFatalf("Failed to allocate UDP listener at %s:%s", config.Network, config.Port)
+			dglogger.ProdFatalf("Failed to allocate UDP listener at %s:%d", config.Network, config.Port)
 			return
 		}
 
