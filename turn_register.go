@@ -8,6 +8,10 @@ import (
 )
 
 func RegisterTurn(server *TurnServer, routerGroup *gin.RouterGroup, relativePath string) {
+	if server == nil {
+		return
+	}
+
 	wrapper.Get(&wrapper.RequestHolder[result.Void, *result.Result[*UserCredentials]]{
 		RouterGroup:  routerGroup,
 		RelativePath: relativePath,
