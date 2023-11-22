@@ -1,6 +1,7 @@
 package dgwrtc
 
 import (
+	dglogger "github.com/darwinOrg/go-logger"
 	"github.com/pion/turn/v3"
 	"log"
 	"net"
@@ -50,10 +51,12 @@ func (s *TurnServer) Close() error {
 
 func NewTurnServer(config *TurnServerConfig) *TurnServer {
 	if len(config.PublicIP) == 0 {
-		log.Fatalf("PublicIP is required")
+		dglogger.OnlyProdFatal("PublicIP is required")
+		return nil
 	}
 	if len(config.AuthSecret) == 0 {
-		log.Fatal("AuthSecret is required")
+		dglogger.OnlyProdFatal("AuthSecret is required")
+		return nil
 	}
 
 	sc := turn.ServerConfig{
@@ -82,7 +85,8 @@ func NewTurnServer(config *TurnServerConfig) *TurnServer {
 
 	server, err := turn.NewServer(sc)
 	if err != nil {
-		log.Panic(err)
+		dglogger.OnlyProdFatal(err)
+		return nil
 	}
 
 	return &TurnServer{
@@ -98,7 +102,8 @@ func fillListenerConfig(sc *turn.ServerConfig, config *TurnServerConfig) {
 	// this allows us to add logging, storage or modify inbound/outbound traffic
 	tcpListener, err := config.ListenerBuilder(config.Network, config.Port)
 	if err != nil {
-		log.Panicf("Failed to create TURN server listener: %s", err)
+		dglogger.OnlyProdFatalf("Failed to create TURN server listener: %s", err)
+		return
 	}
 
 	// ListenerConfig is a list of Listeners and the configuration around them
@@ -116,7 +121,8 @@ func fillPacketConnConfig(sc *turn.ServerConfig, config *TurnServerConfig) {
 	// this allows us to add logging, storage or modify inbound/outbound traffic
 	udpListener, err := config.PacketConnBuilder(config.Network, config.Port)
 	if err != nil {
-		log.Panicf("Failed to create TURN server listener: %s", err)
+		dglogger.OnlyProdFatalf("Failed to create TURN server listener: %s", err)
+		return
 	}
 
 	// PacketConnConfigs is a list of UDP Listeners and the configuration around them
@@ -133,7 +139,8 @@ func fillListenerConfigs(sc *turn.ServerConfig, config *TurnServerConfig) {
 	for i := 0; i < config.ThreadNum; i++ {
 		conn, listErr := config.ListenerBuilder(config.Network, config.Port)
 		if listErr != nil {
-			log.Fatalf("Failed to allocate TCP listener at %s:%s", config.Network, config.Port)
+			dglogger.OnlyProdFatalf("Failed to allocate TCP listener at %s:%s", config.Network, config.Port)
+			return
 		}
 
 		listenerConfigs[i] = turn.ListenerConfig{
@@ -141,7 +148,7 @@ func fillListenerConfigs(sc *turn.ServerConfig, config *TurnServerConfig) {
 			RelayAddressGenerator: config.RelayAddressGenerator,
 		}
 
-		log.Printf("signalingServer %d listening on %s\n", i, conn.Addr().String())
+		log.Printf("Server %d listening on %s\n", i, conn.Addr().String())
 	}
 	sc.ListenerConfigs = listenerConfigs
 }
@@ -151,7 +158,8 @@ func fillPacketConnConfigs(sc *turn.ServerConfig, config *TurnServerConfig) {
 	for i := 0; i < config.ThreadNum; i++ {
 		conn, listErr := config.PacketConnBuilder(config.Network, config.Port)
 		if listErr != nil {
-			log.Fatalf("Failed to allocate UDP listener at %s:%s", config.Network, config.Port)
+			dglogger.OnlyProdFatalf("Failed to allocate UDP listener at %s:%s", config.Network, config.Port)
+			return
 		}
 
 		packetConnConfigs[i] = turn.PacketConnConfig{
@@ -159,7 +167,7 @@ func fillPacketConnConfigs(sc *turn.ServerConfig, config *TurnServerConfig) {
 			RelayAddressGenerator: config.RelayAddressGenerator,
 		}
 
-		log.Printf("signalingServer %d listening on %s\n", i, conn.LocalAddr().String())
+		log.Printf("Server %d listening on %s\n", i, conn.LocalAddr().String())
 	}
 	sc.PacketConnConfigs = packetConnConfigs
 }

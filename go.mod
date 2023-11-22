@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/darwinOrg/go-common v0.0.29
-	github.com/darwinOrg/go-logger v0.0.2
+	github.com/darwinOrg/go-logger v0.0.4
 	github.com/darwinOrg/go-web v0.0.24
 	github.com/darwinOrg/go-websocket v0.1.0
 	github.com/gin-gonic/gin v1.9.1
