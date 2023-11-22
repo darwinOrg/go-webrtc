@@ -68,15 +68,15 @@ func NewTurnServer(config *TurnServerConfig) *TurnServer {
 
 	if config.ThreadNum < 2 {
 		if isTcp {
-			fillListenerConfig(sc, config)
+			fillListenerConfig(&sc, config)
 		} else {
-			fillPacketConnConfig(sc, config)
+			fillPacketConnConfig(&sc, config)
 		}
 	} else {
 		if isTcp {
-			fillListenerConfigs(sc, config)
+			fillListenerConfigs(&sc, config)
 		} else {
-			fillPacketConnConfigs(sc, config)
+			fillPacketConnConfigs(&sc, config)
 		}
 	}
 
@@ -92,7 +92,7 @@ func NewTurnServer(config *TurnServerConfig) *TurnServer {
 	}
 }
 
-func fillListenerConfig(sc turn.ServerConfig, config *TurnServerConfig) {
+func fillListenerConfig(sc *turn.ServerConfig, config *TurnServerConfig) {
 	// Create a TCP listener to pass into pion/turn
 	// pion/turn itself doesn't allocate any TCP listeners, but lets the user pass them in
 	// this allows us to add logging, storage or modify inbound/outbound traffic
@@ -110,7 +110,7 @@ func fillListenerConfig(sc turn.ServerConfig, config *TurnServerConfig) {
 	}
 }
 
-func fillPacketConnConfig(sc turn.ServerConfig, config *TurnServerConfig) {
+func fillPacketConnConfig(sc *turn.ServerConfig, config *TurnServerConfig) {
 	// Create a UDP listener to pass into pion/turn
 	// pion/turn itself doesn't allocate any UDP sockets, but lets the user pass them in
 	// this allows us to add logging, storage or modify inbound/outbound traffic
@@ -128,7 +128,7 @@ func fillPacketConnConfig(sc turn.ServerConfig, config *TurnServerConfig) {
 	}
 }
 
-func fillListenerConfigs(sc turn.ServerConfig, config *TurnServerConfig) {
+func fillListenerConfigs(sc *turn.ServerConfig, config *TurnServerConfig) {
 	listenerConfigs := make([]turn.ListenerConfig, config.ThreadNum)
 	for i := 0; i < config.ThreadNum; i++ {
 		conn, listErr := config.ListenerBuilder(config.Network, config.Port)
@@ -146,7 +146,7 @@ func fillListenerConfigs(sc turn.ServerConfig, config *TurnServerConfig) {
 	sc.ListenerConfigs = listenerConfigs
 }
 
-func fillPacketConnConfigs(sc turn.ServerConfig, config *TurnServerConfig) {
+func fillPacketConnConfigs(sc *turn.ServerConfig, config *TurnServerConfig) {
 	packetConnConfigs := make([]turn.PacketConnConfig, config.ThreadNum)
 	for i := 0; i < config.ThreadNum; i++ {
 		conn, listErr := config.PacketConnBuilder(config.Network, config.Port)
