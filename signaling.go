@@ -43,28 +43,28 @@ type Room struct {
 
 // Client represents a connected client
 type Client struct {
-	id     string          // Client ID
-	conn   *websocket.Conn // WebSocket connection for the client
-	server *Server         // Reference to the signaling server
-	room   *Room           // Room that the client belongs to
+	id     string           // Client ID
+	conn   *websocket.Conn  // WebSocket connection for the client
+	server *signalingServer // Reference to the signaling server
+	room   *Room            // Room that the client belongs to
 }
 
-// Server represents the signaling server
-type Server struct {
+// signalingServer represents the signaling server
+type signalingServer struct {
 	clients map[string]*Client // All connected clients
 	rooms   map[string]*Room   // All rooms
 	mutex   sync.RWMutex
 }
 
-func NewServer() *Server {
-	return &Server{
+func newSignalingServer() *signalingServer {
+	return &signalingServer{
 		clients: make(map[string]*Client),
 		rooms:   make(map[string]*Room),
 	}
 }
 
 // createRoom creates a new room with the given room ID
-func (s *Server) createRoom(roomID string) *Room {
+func (s *signalingServer) createRoom(roomID string) *Room {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -77,7 +77,7 @@ func (s *Server) createRoom(roomID string) *Room {
 }
 
 // joinRoom joins a client to the specified room
-func (s *Server) joinRoom(roomID string, client *Client) *Room {
+func (s *signalingServer) joinRoom(roomID string, client *Client) *Room {
 	s.mutex.Lock()
 	room, ok := s.rooms[roomID]
 	if !ok {
@@ -94,7 +94,7 @@ func (s *Server) joinRoom(roomID string, client *Client) *Room {
 }
 
 // leaveRoom removes a client from its current room
-func (s *Server) leaveRoom(ctx *dgctx.DgContext, client *Client) {
+func (s *signalingServer) leaveRoom(ctx *dgctx.DgContext, client *Client) {
 	s.mutex.Lock()
 	if client.room != nil {
 		room := client.room
@@ -114,7 +114,7 @@ func (s *Server) leaveRoom(ctx *dgctx.DgContext, client *Client) {
 }
 
 // 发送信令消息给房间内的其他客户端
-func (s *Server) sendSignalingMessageToRoom(ctx *dgctx.DgContext, room *Room, sender *Client, message *SignalingMessage) {
+func (s *signalingServer) sendSignalingMessageToRoom(ctx *dgctx.DgContext, room *Room, sender *Client, message *SignalingMessage) {
 	for id, client := range room.clients {
 		if client != sender {
 			err := client.conn.WriteJSON(message)
@@ -127,7 +127,7 @@ func (s *Server) sendSignalingMessageToRoom(ctx *dgctx.DgContext, room *Room, se
 }
 
 // handleSignalingMessage handles signaling messages received from clients
-func (s *Server) handleSignalingMessage(ctx *dgctx.DgContext, client *Client, message *SignalingMessage) {
+func (s *signalingServer) handleSignalingMessage(ctx *dgctx.DgContext, client *Client, message *SignalingMessage) {
 	switch message.Command {
 	case CommandJoin:
 		roomID := GetRoomId(ctx)

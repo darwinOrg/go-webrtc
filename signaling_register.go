@@ -27,7 +27,7 @@ type SignalingConfig struct {
 }
 
 func RegisterSignaling(config *SignalingConfig) {
-	server := NewServer()
+	server := newSignalingServer()
 
 	dgws.GetBytes(&wrapper.RequestHolder[dgws.WebSocketMessage[[]byte], error]{
 		RouterGroup:  config.RouterGroup,

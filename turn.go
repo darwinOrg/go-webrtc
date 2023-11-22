@@ -27,8 +27,21 @@ type TurnServer struct {
 	server               *turn.Server
 }
 
-func (s *TurnServer) GenerateLongTermCredentials() (string, string, error) {
-	return turn.GenerateLongTermCredentials(s.authSecret, s.authLongTermDuration)
+type UserCredentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (s *TurnServer) GenerateLongTermCredentials() (*UserCredentials, error) {
+	username, password, err := turn.GenerateLongTermCredentials(s.authSecret, s.authLongTermDuration)
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserCredentials{
+		Username: username,
+		Password: password,
+	}, nil
 }
 
 func (s *TurnServer) Close() error {
@@ -128,7 +141,7 @@ func fillListenerConfigs(sc turn.ServerConfig, config *TurnServerConfig) {
 			RelayAddressGenerator: config.RelayAddressGenerator,
 		}
 
-		log.Printf("Server %d listening on %s\n", i, conn.Addr().String())
+		log.Printf("signalingServer %d listening on %s\n", i, conn.Addr().String())
 	}
 	sc.ListenerConfigs = listenerConfigs
 }
@@ -146,7 +159,7 @@ func fillPacketConnConfigs(sc turn.ServerConfig, config *TurnServerConfig) {
 			RelayAddressGenerator: config.RelayAddressGenerator,
 		}
 
-		log.Printf("Server %d listening on %s\n", i, conn.LocalAddr().String())
+		log.Printf("signalingServer %d listening on %s\n", i, conn.LocalAddr().String())
 	}
 	sc.PacketConnConfigs = packetConnConfigs
 }
