@@ -11,6 +11,7 @@ require (
 	github.com/google/uuid v1.4.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/pion/stun/v2 v2.0.0
+	github.com/pion/turn/v3 v3.0.1
 )
 
 require (
@@ -38,6 +39,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/pion/dtls/v2 v2.2.8 // indirect
 	github.com/pion/logging v0.2.2 // indirect
+	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/transport/v2 v2.2.4 // indirect
 	github.com/pion/transport/v3 v3.0.1 // indirect
 	github.com/prometheus/client_golang v1.17.0 // indirect
