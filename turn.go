@@ -40,12 +40,11 @@ func (s *TurnServer) GenerateLongTermCredentials() (*UserCredentials, error) {
 		return nil, err
 	}
 
-	host := fmt.Sprintf("%s:%d", s.config.PublicHost, s.config.Port)
 	return &UserCredentials{
 		Username: username,
 		Password: password,
 		Uris: []string{
-			"turn:" + host + "?transport=" + s.config.Network,
+			"turn:" + fmt.Sprintf("%s:%d", s.config.PublicHost, s.config.Port),
 		},
 	}, nil
 }
