@@ -11,7 +11,7 @@ import (
 )
 
 type TurnServerConfig struct {
-	PublicIP              string
+	PublicHost            string
 	Network               string
 	Port                  int
 	ThreadNum             int
@@ -40,7 +40,7 @@ func (s *TurnServer) GenerateLongTermCredentials() (*UserCredentials, error) {
 		return nil, err
 	}
 
-	host := fmt.Sprintf("%s:%d", s.config.PublicIP, s.config.Port)
+	host := fmt.Sprintf("%s:%d", s.config.PublicHost, s.config.Port)
 	return &UserCredentials{
 		Username: username,
 		Password: password,
@@ -55,8 +55,8 @@ func (s *TurnServer) Close() error {
 }
 
 func NewTurnServer(config *TurnServerConfig) *TurnServer {
-	if len(config.PublicIP) == 0 {
-		dglogger.ProdFatal("PublicIP is required")
+	if len(config.PublicHost) == 0 {
+		dglogger.ProdFatal("PublicHost is required")
 		return nil
 	}
 	if len(config.AuthSecret) == 0 {
