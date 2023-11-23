@@ -95,9 +95,8 @@ func NewTurnServer(config *TurnServerConfig) *TurnServer {
 	}
 
 	return &TurnServer{
-		authSecret:           config.AuthSecret,
-		authLongTermDuration: config.AuthLongTermDuration,
-		server:               server,
+		config: config,
+		server: server,
 	}
 }
 
