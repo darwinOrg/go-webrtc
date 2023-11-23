@@ -10,7 +10,6 @@ import (
 )
 
 type TurnServerConfig struct {
-	PublicIP              string
 	Network               string
 	Port                  int
 	ThreadNum             int
@@ -50,10 +49,6 @@ func (s *TurnServer) Close() error {
 }
 
 func NewTurnServer(config *TurnServerConfig) *TurnServer {
-	if len(config.PublicIP) == 0 {
-		dglogger.ProdFatal("PublicIP is required")
-		return nil
-	}
 	if len(config.AuthSecret) == 0 {
 		dglogger.ProdFatal("AuthSecret is required")
 		return nil
