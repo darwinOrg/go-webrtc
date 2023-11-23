@@ -29,6 +29,7 @@ type TurnServer struct {
 }
 
 type UserCredentials struct {
+	Realm    string
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Uris     []string
@@ -41,6 +42,7 @@ func (s *TurnServer) GenerateLongTermCredentials() (*UserCredentials, error) {
 	}
 
 	return &UserCredentials{
+		Realm:    s.config.Realm,
 		Username: username,
 		Password: password,
 		Uris: []string{
