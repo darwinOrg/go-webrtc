@@ -1,11 +1,11 @@
 package dgwrtc
 
 import (
-	"fmt"
 	dglogger "github.com/darwinOrg/go-logger"
 	"github.com/pion/turn/v3"
 	"log"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -41,12 +41,17 @@ func (s *TurnServer) GenerateLongTermCredentials() (*UserCredentials, error) {
 		return nil, err
 	}
 
+	host := s.config.PublicHost
+	if s.config.Port != 80 {
+		host = host + ":" + strconv.Itoa(s.config.Port)
+	}
+
 	return &UserCredentials{
 		Realm:    s.config.Realm,
 		Username: username,
 		Password: password,
 		Uris: []string{
-			"turn:" + fmt.Sprintf("%s:%d", s.config.PublicHost, s.config.Port),
+			"turn:" + host,
 		},
 	}, nil
 }
