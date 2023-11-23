@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterTurn(server *TurnServer, routerGroup *gin.RouterGroup, relativePath string) {
+func RegisterCredentials(server *TurnServer, routerGroup *gin.RouterGroup, relativePath string) {
 	if server == nil {
 		return
 	}
