@@ -1,6 +1,7 @@
 package dgwrtc
 
 import (
+	"fmt"
 	dglogger "github.com/darwinOrg/go-logger"
 	"github.com/pion/turn/v3"
 	"log"
@@ -10,6 +11,7 @@ import (
 )
 
 type TurnServerConfig struct {
+	PublicIP              string
 	Network               string
 	Port                  int
 	ThreadNum             int
@@ -22,25 +24,29 @@ type TurnServerConfig struct {
 }
 
 type TurnServer struct {
-	authSecret           string
-	authLongTermDuration time.Duration
-	server               *turn.Server
+	config *TurnServerConfig
+	server *turn.Server
 }
 
 type UserCredentials struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+	Uris     []string
 }
 
 func (s *TurnServer) GenerateLongTermCredentials() (*UserCredentials, error) {
-	username, password, err := turn.GenerateLongTermCredentials(s.authSecret, s.authLongTermDuration)
+	username, password, err := turn.GenerateLongTermCredentials(s.config.AuthSecret, s.config.AuthLongTermDuration)
 	if err != nil {
 		return nil, err
 	}
 
+	host := fmt.Sprintf("%s:%d", s.config.PublicIP, s.config.Port)
 	return &UserCredentials{
 		Username: username,
 		Password: password,
+		Uris: []string{
+			"turn:" + host + "?transport=" + s.config.Network,
+		},
 	}, nil
 }
 
@@ -49,6 +55,10 @@ func (s *TurnServer) Close() error {
 }
 
 func NewTurnServer(config *TurnServerConfig) *TurnServer {
+	if len(config.PublicIP) == 0 {
+		dglogger.ProdFatal("PublicIP is required")
+		return nil
+	}
 	if len(config.AuthSecret) == 0 {
 		dglogger.ProdFatal("AuthSecret is required")
 		return nil
