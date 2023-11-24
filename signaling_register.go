@@ -2,13 +2,13 @@ package dgwrtc
 
 import (
 	dgctx "github.com/darwinOrg/go-common/context"
-	dgerr "github.com/darwinOrg/go-common/enums/error"
 	"github.com/darwinOrg/go-common/utils"
 	dglogger "github.com/darwinOrg/go-logger"
 	"github.com/darwinOrg/go-web/wrapper"
 	"github.com/darwinOrg/go-webrtc/room"
 	dgws "github.com/darwinOrg/go-websocket"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -34,8 +34,8 @@ func DefaultGetRoomId(ctx *dgctx.DgContext, bizType string, bizId int64) (string
 func DefaultGetRoomClient(c *gin.Context, ctx *dgctx.DgContext, roomId string) (*Client, error) {
 	clientId := c.Query(ClientIdKey)
 	clientType := c.Query(ClientTypeKey)
-	if clientId == "" || clientType == "" {
-		return nil, dgerr.ARGUMENT_NOT_VALID
+	if clientId == "" {
+		clientId = uuid.NewString()
 	}
 
 	rc, err := room.GetOrCreateRoomClient(ctx, roomId, clientId, clientType)
