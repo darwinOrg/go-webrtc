@@ -14,6 +14,8 @@ github.com/chenzhuoyu/iasm v0.9.0/go.mod h1:Xjy2NpN3h7aUqeqM+woSuuvxmIe6+DDsiNLI
 github.com/chenzhuoyu/iasm v0.9.1 h1:tUHQJXo3NhBqw6s33wkGn9SP3bvrWLdlVIJ3hQBL7P0=
 github.com/chenzhuoyu/iasm v0.9.1/go.mod h1:Xjy2NpN3h7aUqeqM+woSuuvxmIe6+DDsiNLIrkAmYog=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
+github.com/darwinOrg/daog-ext v0.0.1 h1:USqpcwRiRt8pjysw2r3HhB1joIf2nygrzLAuXXYA6+8=
+github.com/darwinOrg/daog-ext v0.0.1/go.mod h1:kKTNz/a7uvIzA86Cvt+hqb8cBGYld+jKDDhkmjqrQGo=
 github.com/darwinOrg/go-common v0.0.29 h1:CBwysCXcDiEKIZMho5Wj0Blkva8Ew8LACE1qjtEB1kQ=
 github.com/darwinOrg/go-common v0.0.29/go.mod h1:pItL/4ZV0bU64N2qD9ACpvDlYjeomAbheIzPXKqbb88=
 github.com/darwinOrg/go-logger v0.0.5 h1:lnbPEGuUAhkqSbktHOtv8Lxe8RJaeF4KY/uud29hVE4=
@@ -120,6 +122,8 @@ github.com/prometheus/procfs v0.12.0/go.mod h1:pcuDEFsWDnvcgNzo4EEweacyhjeA9Zk3c
 github.com/rogpeppe/go-internal v1.6.1/go.mod h1:xXDCJY+GAPziupqXw64V24skbSoqbTEfhy4qGm1nDQc=
 github.com/rogpeppe/go-internal v1.8.0/go.mod h1:WmiCO8CzOY8rg0OYDC4/i/2WRWAB6poM+XZ2dLUbcbE=
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
+github.com/rolandhe/daog v0.0.31 h1:JaenMKZTQC73OTrMGI16lDge7iVmprxnmviusTFJCeA=
+github.com/rolandhe/daog v0.0.31/go.mod h1:kCzpAQO1/bYEnOCiIiOSN8286JkINHzdSDTWywtf/Cc=
 github.com/rolandhe/saber v0.0.4 h1:Vo+G18mKiScBF6P4e10WPOoG34WCZCmKnpoAr8/s5GU=
 github.com/rolandhe/saber v0.0.4/go.mod h1:Mknm2tOphkPw4ccMEzvRxshat0xCJtu1UDRUR5RgtA0=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=

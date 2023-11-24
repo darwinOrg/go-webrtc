@@ -22,7 +22,7 @@ CREATE TABLE `webrtc_room_client`
     `id`            BIGINT      NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `room_id`       VARCHAR(64) NOT NULL COMMENT '房间ID',
     `client_id`     VARCHAR(64) NOT NULL COMMENT '客户ID',
-    `client_type`   INT         NOT NULL DEFAULT 0 COMMENT '客户类型',
+    `client_type`   VARCHAR(16) NOT NULL DEFAULT '' COMMENT '客户类型',
     `client_status` INT         NOT NULL DEFAULT 0 COMMENT '客户状态',
     `user_id`       bigint      NOT NULL DEFAULT '0' COMMENT '用户ID',
     `created_by`    bigint      NOT NULL DEFAULT '0',

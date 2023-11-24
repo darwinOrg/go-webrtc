@@ -20,13 +20,19 @@ func TestSignaling(t *testing.T) {
 	RegisterSignaling(&SignalingConfig{
 		RouterGroup:  engine.Group("/ws"),
 		RelativePath: "",
-		GetRoomIdFunc: func(c *gin.Context, ctx *dgctx.DgContext) (string, error) {
-			return c.Query(RoomIdKey), nil
+		BizType:      "test",
+		GetBizId: func(c *gin.Context, ctx *dgctx.DgContext) (int64, error) {
+			return 1, nil
 		},
+		GetRoomId:     DefaultGetRoomId,
+		GetRoomClient: DefaultGetRoomClient,
 		StartSignalingCallback: func(ctx *dgctx.DgContext, conn *websocket.Conn) error {
 			return nil
 		},
 		SignalingMessageCallback: func(ctx *dgctx.DgContext, wsm *dgws.WebSocketMessage[[]byte]) error {
+			return nil
+		},
+		ClientLeaveRoomCallback: func(ctx *dgctx.DgContext, client *Client) error {
 			return nil
 		},
 	})

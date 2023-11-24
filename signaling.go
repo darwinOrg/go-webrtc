@@ -22,6 +22,8 @@ const (
 	CommandLeave     CommandType = "leave"
 )
 
+type ClientLeaveRoomCallbackFunc func(ctx *dgctx.DgContext, client *Client) error
+
 type SignalingMessage struct {
 	Command CommandType            `json:"command"`
 	Payload map[string]interface{} `json:"payload"`
@@ -44,7 +46,7 @@ type Room struct {
 // Client represents a connected client
 type Client struct {
 	id     string           // Client ID
-	tye    int              // Client type
+	tye    string           // Client type
 	conn   *websocket.Conn  // WebSocket connection for the client
 	server *signalingServer // Reference to the signaling server
 	room   *Room            // Room that the client belongs to

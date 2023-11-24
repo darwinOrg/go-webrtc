@@ -2,19 +2,56 @@ package dgwrtc
 
 import (
 	dgctx "github.com/darwinOrg/go-common/context"
+	dgerr "github.com/darwinOrg/go-common/enums/error"
 	"github.com/darwinOrg/go-common/utils"
 	dglogger "github.com/darwinOrg/go-logger"
 	"github.com/darwinOrg/go-web/wrapper"
+	"github.com/darwinOrg/go-webrtc/room"
 	dgws "github.com/darwinOrg/go-websocket"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
+var (
+	ClientIdKey   = "clientId"
+	ClientTypeKey = "clientType"
+)
+
 type GetBizIdFunc func(c *gin.Context, ctx *dgctx.DgContext) (int64, error)
 type GetRoomIdFunc func(ctx *dgctx.DgContext, bizType string, bizId int64) (string, error)
-type GetRoomClientFunc func(c *gin.Context, ctx *dgctx.DgContext) (*Client, error)
+type GetRoomClientFunc func(c *gin.Context, ctx *dgctx.DgContext, roomId string) (*Client, error)
 type StartSignalingCallbackFunc func(ctx *dgctx.DgContext, conn *websocket.Conn) error
-type ClientLeaveRoomCallbackFunc func(ctx *dgctx.DgContext, client *Client) error
+
+func DefaultGetRoomId(ctx *dgctx.DgContext, bizType string, bizId int64) (string, error) {
+	rm, err := room.GetOrCreateRoom(ctx, bizType, bizId)
+	if err != nil {
+		return "", err
+	}
+
+	return rm.RoomId, nil
+}
+
+func DefaultGetRoomClient(c *gin.Context, ctx *dgctx.DgContext, roomId string) (*Client, error) {
+	clientId := c.Query(ClientIdKey)
+	clientType := c.Query(ClientTypeKey)
+	if clientId == "" || clientType == "" {
+		return nil, dgerr.ARGUMENT_NOT_VALID
+	}
+
+	rc, err := room.GetOrCreateRoomClient(ctx, roomId, clientId, clientType)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Client{
+		id:  rc.ClientId,
+		tye: rc.ClientType,
+	}, nil
+}
+
+func DefaultClientLeaveRoomCallback(ctx *dgctx.DgContext, client *Client) error {
+	return room.ClientLeaveRoom(ctx, getRoomId(ctx), client.id)
+}
 
 type SignalingConfig struct {
 	RouterGroup              *gin.RouterGroup
@@ -30,6 +67,16 @@ type SignalingConfig struct {
 
 func RegisterSignaling(config *SignalingConfig) {
 	server := newSignalingServer()
+
+	if config.GetRoomId == nil {
+		config.GetRoomId = DefaultGetRoomId
+	}
+	if config.GetRoomClient == nil {
+		config.GetRoomClient = DefaultGetRoomClient
+	}
+	if config.ClientLeaveRoomCallback == nil {
+		config.ClientLeaveRoomCallback = DefaultClientLeaveRoomCallback
+	}
 
 	dgws.GetBytes(&wrapper.RequestHolder[dgws.WebSocketMessage[[]byte], error]{
 		RouterGroup:  config.RouterGroup,
@@ -67,7 +114,7 @@ func RegisterSignaling(config *SignalingConfig) {
 		}
 		setRoomId(ctx, roomId)
 
-		client, err := config.GetRoomClient(c, ctx)
+		client, err := config.GetRoomClient(c, ctx, roomId)
 		if err != nil {
 			dglogger.Errorf(ctx, "[bizId: %d, roomId: %s] GetRoomClient error: %v", bizId, roomId, err)
 			return err

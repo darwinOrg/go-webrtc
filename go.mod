@@ -3,6 +3,7 @@ module github.com/darwinOrg/go-webrtc
 go 1.19
 
 require (
+	github.com/darwinOrg/daog-ext v0.0.1
 	github.com/darwinOrg/go-common v0.0.29
 	github.com/darwinOrg/go-logger v0.0.5
 	github.com/darwinOrg/go-monitor v0.0.3
@@ -13,6 +14,7 @@ require (
 	github.com/gorilla/websocket v1.5.1
 	github.com/pion/stun/v2 v2.0.0
 	github.com/pion/turn/v3 v3.0.1
+	github.com/rolandhe/daog v0.0.31
 )
 
 require (
