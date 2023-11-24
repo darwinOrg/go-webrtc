@@ -44,6 +44,7 @@ type Room struct {
 // Client represents a connected client
 type Client struct {
 	id     string           // Client ID
+	tye    int              // Client type
 	conn   *websocket.Conn  // WebSocket connection for the client
 	server *signalingServer // Reference to the signaling server
 	room   *Room            // Room that the client belongs to
@@ -51,15 +52,13 @@ type Client struct {
 
 // signalingServer represents the signaling server
 type signalingServer struct {
-	clients map[string]*Client // All connected clients
-	rooms   map[string]*Room   // All rooms
-	mutex   sync.RWMutex
+	rooms map[string]*Room // All rooms
+	mutex sync.RWMutex
 }
 
 func newSignalingServer() *signalingServer {
 	return &signalingServer{
-		clients: make(map[string]*Client),
-		rooms:   make(map[string]*Room),
+		rooms: make(map[string]*Room),
 	}
 }
 
@@ -94,7 +93,7 @@ func (s *signalingServer) joinRoom(roomID string, client *Client) *Room {
 }
 
 // leaveRoom removes a client from its current room
-func (s *signalingServer) leaveRoom(ctx *dgctx.DgContext, client *Client) {
+func (s *signalingServer) leaveRoom(ctx *dgctx.DgContext, client *Client, clientLeaveCallback ClientLeaveRoomCallbackFunc) {
 	s.mutex.Lock()
 	if client.room != nil {
 		room := client.room
@@ -111,6 +110,13 @@ func (s *signalingServer) leaveRoom(ctx *dgctx.DgContext, client *Client) {
 		client.room = nil
 	}
 	s.mutex.Unlock()
+
+	if clientLeaveCallback != nil {
+		err := clientLeaveCallback(ctx, client)
+		if err != nil {
+			dglogger.Errorf(ctx, "leave room error: %v", err)
+		}
+	}
 }
 
 // 发送信令消息给房间内的其他客户端
@@ -127,10 +133,11 @@ func (s *signalingServer) sendSignalingMessageToRoom(ctx *dgctx.DgContext, room 
 }
 
 // handleSignalingMessage handles signaling messages received from clients
-func (s *signalingServer) handleSignalingMessage(ctx *dgctx.DgContext, client *Client, message *SignalingMessage) {
+func (s *signalingServer) handleSignalingMessage(ctx *dgctx.DgContext, message *SignalingMessage, clientLeaveCallback ClientLeaveRoomCallbackFunc) {
+	client := getClient(ctx)
 	switch message.Command {
 	case CommandJoin:
-		roomID := GetRoomId(ctx)
+		roomID := getRoomId(ctx)
 		if roomID == "" {
 			dglogger.Error(ctx, "has no room ID")
 			return
@@ -144,7 +151,7 @@ func (s *signalingServer) handleSignalingMessage(ctx *dgctx.DgContext, client *C
 			s.sendSignalingMessageToRoom(ctx, room, client, message)
 		}
 	case CommandLeave:
-		s.leaveRoom(ctx, client)
+		s.leaveRoom(ctx, client, clientLeaveCallback)
 		return
 	}
 }
@@ -153,7 +160,7 @@ func setRoomId(ctx *dgctx.DgContext, roomID string) {
 	ctx.SetExtraKeyValue(RoomIdKey, roomID)
 }
 
-func GetRoomId(ctx *dgctx.DgContext) string {
+func getRoomId(ctx *dgctx.DgContext) string {
 	sessionId := ctx.GetExtraValue(RoomIdKey)
 	if sessionId == nil {
 		return ""
